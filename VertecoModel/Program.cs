@@ -18,6 +18,7 @@ namespace VertecoModel
         private const string MAIN_FILE_PREFIX = "MAIN_*";
         private const string SUPP_FILE_PREFIX = "SUPP_*";
         private const string FORECAST_FILE_PREFIX = "PRED_*";
+        private const string HOLIDAY_FILE_PREFIX = "HOL_*";
  
         private const int MinNrParameters = 3;
         private const int MaxNrParameters = 4;
