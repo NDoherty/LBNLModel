@@ -299,7 +299,7 @@ namespace VertecoModel
             {
                 if (DateTime.TryParse(_header[fieldName], out result))
                 {
-                    Logger.LogMessage(MessageType.Information, "Extracted ["+ fieldName+ "] = ["+_header[fieldName]+"] from Supp File: [" + result.ToString() + "]");
+                    Logger.LogMessage(MessageType.Information, "Extracted ["+ fieldName + "] = ["+_header[fieldName]+"] from Supp File: [" + result.ToString() + "]");
                 }
                 else
                 {

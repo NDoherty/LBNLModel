@@ -95,6 +95,10 @@ namespace VertecoModel
                         }
                     }
                 }
+                // Log our success
+                string message = "Holiday File [" + this._filename + "] successfully read.";
+                Logger.LogMessage(MessageType.Warning, message);
+
             }
             else
             {

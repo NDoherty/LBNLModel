@@ -13,6 +13,9 @@ namespace VertecoModel
     /// </summary>
     class ModelBuilding
     {
+        public const int JAN01 = 0101;
+        public const int DEC31 = 1231;
+
         private const string NAICS_RETAIL1 = "44";
         private const string NAICS_RETAIL2 = "45";
         private const int DEFAULT_ENERGY_THRESHOLD = 1;
@@ -25,7 +28,10 @@ namespace VertecoModel
         /// </summary>
         public string BuildingId { get; set; }
         public string NAICSCode { get; set; }
-        public  List<DayOfWeek> WorkingDays;
+        public DateTime WorkdayEndTime { get; set; }
+        public List<DayOfWeek> WorkingDays { get; set; }
+        public int TrainingStartMMDD { get; set; }
+        public int TrainingEndMMDD { get; set; }
         /// <summary>
         /// Nonworking days (holidays) are stored directly in the model engine
         /// </summary>
@@ -69,7 +75,20 @@ namespace VertecoModel
         public ModelBuilding()
         {
             _allModels = new List<Model>();
+            // Set defaults
             this.EnergyThreshold = DEFAULT_ENERGY_THRESHOLD;
+            this.WorkdayEndTime = DateTime.Parse("18:00:00");
+
+            // Working Days - default is M-F
+            WorkingDays = new List<DayOfWeek>(5);
+            WorkingDays.Add(DayOfWeek.Monday);
+            WorkingDays.Add(DayOfWeek.Tuesday);
+            WorkingDays.Add(DayOfWeek.Wednesday);
+            WorkingDays.Add(DayOfWeek.Thursday);
+            WorkingDays.Add(DayOfWeek.Friday);
+
+            TrainingStartMMDD = JAN01;
+            TrainingEndMMDD = DEC31;
 
         }
 
@@ -83,6 +102,58 @@ namespace VertecoModel
             }
             return (null != _dailyEnergy) || (null != _dailyEnergyPerHour);
         }
+
+
+        public bool FindBestModel()
+        {
+            bool bSuccess = true;
+            // First calculate the daily total energy and average hourly energy
+            if (this.CalculateDailyEnergy())
+            {
+
+                // We iterate through lags from 0 to 8 hours, window sizes from 8 to 16 and workingDay end time is 18:00
+                // In future these could be command line parameters, or parameters in a supplemental file
+                double minLag, maxLag;
+                int minWindowSize, maxWindowSize;
+
+                minLag = 0.0;
+                maxLag = 8.0;
+                minWindowSize = 8;
+                maxWindowSize = 16;
+
+                string message = "Modelling process is starting...";
+                Logger.LogMessage(MessageType.Information, message);
+
+                double currentLag = minLag;
+                while (currentLag <= maxLag)
+                {
+                    message = "Modelling with NTL of " + currentLag.ToString() + "] hours.";
+                    Logger.LogMessage(MessageType.Information, message);
+                    this.FindBestModel(minWindowSize, maxWindowSize, this.WorkdayEndTime, currentLag);
+                    currentLag += 0.25;
+                }
+                // Log Best model and use it to forecast
+                message = "Modelling completed";
+                Logger.LogMessage(MessageType.Information, message);
+
+                message = "Best Model:: WindowSize = [" + this.BestModel.WindowSize.ToString() + " QH periods] " +
+                            "Lag Window = " + this.BestModel.LagWindow.ToString() + " hours] " +
+                            "Model Type = " + this.BestModel.EnergyModel.ToString() + "] " +
+                            "RSQ = " + this.BestModel.StatsSummary.RSquared + "]";
+                Logger.LogMessage(MessageType.Information, message);
+
+            }
+            else
+            {
+                Logger.LogMessage(MessageType.Error, "failed to calculate daily energy totals. Exiting...");
+                bSuccess = false;
+
+            }
+
+            return bSuccess;
+        }
+
+
         /// <summary>
         /// 
         /// </summary>
@@ -156,14 +227,7 @@ namespace VertecoModel
 
         internal void SetWorkingDaysAccordingtoNAICS()
         {
-            // min is 5 days
-            WorkingDays = new List<DayOfWeek>(5);
-            WorkingDays.Add(DayOfWeek.Monday);
-            WorkingDays.Add(DayOfWeek.Tuesday);
-            WorkingDays.Add(DayOfWeek.Wednesday);
-            WorkingDays.Add(DayOfWeek.Thursday);
-            WorkingDays.Add(DayOfWeek.Friday);
-
+            // M-F is already defaulted in constructor
             // Retailers get Sat/Sun also
             if (this.NAICSCode.Length > 2)
             {

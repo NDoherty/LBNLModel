@@ -146,9 +146,13 @@ namespace VertecoModel
         public LBNL_Main_File()
         {
             TemperatureFieldName = T013_dbOATF;
+
+            // default to all year as training period
+            StartDateMMDD = 0101;
+            EndDateMMDD = 1231;
         }
 #endregion
-#region public methods
+        #region public methods
         public bool CheckFile()
         {
             bool bSuccess = true;
